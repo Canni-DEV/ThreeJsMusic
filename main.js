@@ -41,7 +41,7 @@ const api = {
 	time_step: 0.05,
 	camera_position_y: 0,
 	camera_position_x: 0,
-	camera_position_z: 75,
+	camera_position_z: 65,
 	poligono_sides: 8,
 	zero: function () {
 		targetZero();
@@ -538,7 +538,7 @@ function animate() {
 				api.camera_position_y = 0;
 				break;
 			case 24:
-				api.camera_position_z += 20;
+				api.camera_position_z = 75;
 				eliminarLineaCubo();
 				eliminarPoigono2D();
 				crearLineaPoligono2DMaya(0,0,6);
