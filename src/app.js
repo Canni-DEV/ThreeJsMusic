@@ -12,7 +12,7 @@ import { MusicScene } from './music_scene.js';
 
 export class App {
 
-    constructor(size, bpm) {
+    constructor(size, bpm, htmlIdContainer) {
         this.audioBars = 0;
         this.scene = null;
         this.renderer = null;
@@ -45,22 +45,23 @@ export class App {
             camera_position_x: 0,
             camera_position_z: 65,
             poligono_sides: 8,
-            zero: () =>  this.targetZero(),
+            zero: () => this.targetZero(),
             circulo: () => this.targetCirculo(),
             linea: () => this.targetPoligono(2),
             triangulo: () => this.targetPoligono(3),
+            cuadrado: () => this.targetPoligono(4),
             poligono: () => this.targetPoligono(this.api.poligono_sides),
-            music:  () => this.toogleMusic()
-            };
+            music: () => this.toogleMusic()
+        };
 
-        this.init();
-        this.animate();    
+        this.init(htmlIdContainer);
+        this.animate();
     }
 
-   
 
-    init() {
-        
+
+    init(htmlIdContainer) {
+
         const width = window.innerWidth;
         const height = window.innerHeight;
 
@@ -74,11 +75,11 @@ export class App {
         this.renderer.toneMapping = THREE.ReinhardToneMapping;
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(width, height);
-        this.container = document.getElementById('container');
+        this.container = document.getElementById(htmlIdContainer);
         this.container.appendChild(this.renderer.domElement);
 
         this.rendererCss = new CSS3DRenderer();
-        this.rendererCss.setSize( window.innerWidth, window.innerHeight );
+        this.rendererCss.setSize(window.innerWidth, window.innerHeight);
         this.rendererCss.domElement.style.position = 'absolute';
         this.rendererCss.domElement.style.top = 0;
         this.container.appendChild(this.rendererCss.domElement);
@@ -119,7 +120,7 @@ export class App {
         this.actualMusicScene = new THREE.Scene();
         this.musicScene = new MusicScene(this.api, this.actualMusicScene);
         this.scene.add(this.actualMusicScene);
-        
+
         let scene = this.scene;
         Object.assign(window, { scene });
     }
@@ -160,52 +161,52 @@ export class App {
         this.rendererCss.setSize(width, height);
     }
 
-    on_music_start(){
+    on_music_start() {
         this.musicStart = true;
         this.camera.position.z *= 2;
         this.renderer.toneMappingExposure = Math.pow(2, 4.0);
         this.musicScene.crearLineaPoligono2DMaya(0, 0, 75, this.api);
-        this.musicScene.escalarPoligono2DMaya( 0.1);
-        this.create_text("GARBURATOR´S VISUALIZER")
+        this.musicScene.escalarPoligono2DMaya(0.1);
+        this.create_text("GARBURATORS VISUALIZER")
     }
 
-    on_bar(){
+    on_bar() {
         this.renderer.toneMappingExposure = Math.pow(2, 4.0);
         this.musicScene.escalarPoligono2D(1.2);
         this.musicScene.escalarPoligono2DMaya(0.8);
     }
 
-    lerp_camera_position(delta){
-        if(this.camera.position.distanceTo(new THREE.Vector3(this.api.camera_position_x,this.api.camera_position_y,this.api.camera_position_z)) > 0.05 ){
+    lerp_camera_position(delta) {
+        if (this.camera.position.distanceTo(new THREE.Vector3(this.api.camera_position_x, this.api.camera_position_y, this.api.camera_position_z)) > 0.05) {
             this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, this.api.camera_position_y, delta);
             this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, this.api.camera_position_x, delta);
             this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, this.api.camera_position_z, 0.25 * delta);
-        }        
+        }
     }
 
-    create_text(text){
-        if(this.objectCSS == null){
+    create_text(text) {
+        if (this.objectCSS == null) {
             const element = document.createElement('div');
-            element.style = "text-align: center; font-family: 'Matrix', sans-serif;";
+            element.style = "text-align: center; font-family: 'Matrix', sans-serif; font-size:75px; line-height:100px;";
             this.objectCSS = new CSS3DObject(element);
-            this.objectCSS.position.set(0,0,-1);
+            this.objectCSS.position.set(0, 0, -250);
             this.objectCSS.element.innerHTML = text;
             this.objectCSS.scale.set(0.5, 0.5, 0.5);
             this.scene.add(this.objectCSS);
-        }      
+        }
     }
 
-    update_text(text){
-        if(this.objectCSS != null){
+    update_text(text) {
+        if (this.objectCSS != null) {
             this.objectCSS.element.innerHTML = text;
-        }              
+        }
     }
 
-    delete_text(){
-        if(this.objectCSS != null){
+    delete_text() {
+        if (this.objectCSS != null) {
             this.scene.remove(this.objectCSS);
             this.objectCSS = null;
-        }      
+        }
     }
 
 
@@ -284,11 +285,12 @@ export class App {
                     this.api.camera_position_y = 2;
                     break;
                 case 40:
+                    this.api.radius = 30;
                     this.musicScene.crearLineaCubo(0, 0, this.api);
                     this.musicScene.crearLineaPoligono2D(0, 0, 6, this.api)
                     this.musicScene.eliminarPoigono2DMaya();
                     this.musicScene.targetCirculo(this.api);
-                    this.api.rotation_speed = 0;
+                    this.api.rotation_speed = 0.1;
                     this.api.camera_position_y = 5;
                     this.api.camera_position_x += 15;
                     break;
@@ -344,7 +346,7 @@ export class App {
                 case 84:
                     this.musicScene.eliminarPoigono2DMaya();
                     this.musicScene.crearLineaPoligono2DMaya(0, 0, 6, this.api);
-                    this.musicScene.targetCirculo(this.api);
+                    this.musicScene.targetPoligono(6, this.api);
                     this.api.camera_position_z = 80;
                     this.api.camera_position_y = 0;
                     this.api.rotation_speed = 0.2 + (this.audioBars - 60) * delta;
