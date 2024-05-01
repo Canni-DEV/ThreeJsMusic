@@ -5,6 +5,7 @@ export class MusicScene {
         this.cube = null;
         this.poligono2D = null;
         this.poligono2DMaya = null;
+        this.poligono2DMayaPoligono = null;
         this.particles = [];
         this.targetPositions = [];
         this.scene = scene;
@@ -45,49 +46,47 @@ export class MusicScene {
         if (numberOfSides == null) {
             numberOfSides = api.poligono_sides;
         }
+
         // Parámetros del polígono
-        var ladoPoligono = api.radius; // Longitud de cada lado del polígono
-        var cantidadLados = numberOfSides; // Cantidad de lados del polígono
-        var cantidadCirculos = api.size; // Cantidad de círculos a instanciar
-        var centro = new THREE.Vector2(0, 0);
+        const ladoPoligono = api.radius;
+        const cantidadLados = numberOfSides;
+        const cantidadCirculos = api.size;
+        const centro = new THREE.Vector2(0, 0);
+
+        // Constantes pre-calculadas
+        const PI2 = Math.PI * 2;
+        const PI_DIV_CANTIDAD_LADOS = PI2 / cantidadLados;
 
         // Calcular las posiciones de los vértices del polígono
-        var vertices = [];
-        for (var i = 0; i < cantidadLados; i++) {
-            var angulo = (i / cantidadLados) * Math.PI * 2;
-            var x = centro.x + ladoPoligono * Math.cos(angulo);
-            var y = centro.y + ladoPoligono * Math.sin(angulo);
+        const vertices = [];
+        for (let i = 0; i < cantidadLados; i++) {
+            const angulo = i * PI_DIV_CANTIDAD_LADOS;
+            const x = centro.x + ladoPoligono * Math.cos(angulo);
+            const y = centro.y + ladoPoligono * Math.sin(angulo);
             vertices.push(new THREE.Vector2(x, y));
         }
 
-        // Calcular las posiciones a lo largo de los lados del polígono
-        var puntosLado = [];
-        for (var i = 0; i < cantidadLados; i++) {
-            var puntoInicial = vertices[i];
-            var puntoFinal = vertices[(i + 1) % cantidadLados];
-            for (var j = 1; j < cantidadCirculos / cantidadLados; j++) {
-                var puntoIntermedio = puntoInicial.clone().lerp(puntoFinal, j / (cantidadCirculos / cantidadLados));
-                puntosLado.push(puntoIntermedio);
+        // Calcular la cantidad de círculos por lado
+        const circulosPorLado = Math.floor(cantidadCirculos / cantidadLados);
+
+        // Posicionar los círculos en los vértices y puntos intermedios
+        let index = 0;
+        for (let i = 0; i < vertices.length; i++) {
+            const puntoVertice = vertices[i];
+            this.targetPositions[index++] = new THREE.Vector3(puntoVertice.x, puntoVertice.y, 0);
+
+            const puntoFinal = vertices[(i + 1) % cantidadLados];
+            for (let j = 1; j < circulosPorLado; j++) {
+                const puntoIntermedio = puntoVertice.clone().lerp(puntoFinal, j / circulosPorLado);
+                this.targetPositions[index++] = new THREE.Vector3(puntoIntermedio.x, puntoIntermedio.y, 0);
             }
         }
 
-        // Posicionar los círculos en los vértices y puntos intermedios
-        var index = 0;
-        for (var i = 0; i < vertices.length; i++) {
-            var x = vertices[i].x;
-            var y = vertices[i].y;
-            this.targetPositions[index] = new THREE.Vector3(x, y, 0);
-            for (var j = 0; j < cantidadCirculos / cantidadLados - 1; j++) {
-                var punto = puntosLado[index++];
-                x = punto.x;
-                y = punto.y;
-                this.targetPositions[index] = new THREE.Vector3(x, y, 0);
-            }
-        }
-        var lastIndex = index;
-        while (lastIndex < api.size) {
+        // Repetir los últimos círculos para alcanzar la cantidad especificada
+        let lastIndex = index - 1;
+        while (lastIndex < cantidadCirculos) {
             lastIndex++;
-            this.targetPositions[lastIndex] = this.targetPositions[index];
+            this.targetPositions[lastIndex] = this.targetPositions[index - 1];
         }
         this.lerpTime = 0;
     }
@@ -224,7 +223,7 @@ export class MusicScene {
 
         const objectScene = new THREE.Scene();
 
-        for (let index = 1; index < api.size; index++) {
+        for (let index = 1; index < api.size / 2; index++) {
             const angleStep = (2 * Math.PI) / number_sides;
             const points = [];
             for (let i = 0; i < number_sides; i++) {
@@ -246,6 +245,43 @@ export class MusicScene {
         this.scene.add(objectScene);
     }
 
+    crearLineapoligono2DMayaPoligono(number_sides, api) {
+        const material = new THREE.LineBasicMaterial({
+            color: 0x1DA150
+        });
+
+        const halfSize = api.cube_size / 2;
+
+        let distancia = api.cube_size;
+        let distanciaAux = 0;
+        const objectScene = new THREE.Scene();
+
+        for (let x = -api.size / 16; x < api.size / 16; x++) {
+            for (let y = -api.size / 16; y < api.size / 16; y++) {
+                const angleStep = (2 * Math.PI) / number_sides;
+                const points = [];
+                for (let i = 0; i < number_sides; i++) {
+                    const x1 = x * distancia + (halfSize) * Math.cos(i * angleStep);
+                    const y1 = y * distancia + (halfSize) * Math.sin(i * angleStep);
+                    const x2 = x * distancia + (halfSize) * Math.cos((i + 1) * angleStep);
+                    const y2 = y * distancia + (halfSize) * Math.sin((i + 1) * angleStep);
+                    points.push(new THREE.Vector3(x1, y1, 0));
+                    points.push(new THREE.Vector3(x2, y2, 0));
+
+                }
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const object = new THREE.LineSegments(geometry, material);
+                objectScene.add(object);
+            }
+            if (distancia == api.cube_size)
+                distancia = api.cube_size * 1.6;
+            else
+                distancia = api.cube_size;
+        }
+        this.poligono2DMayaPoligono = objectScene;
+        this.scene.add(objectScene);
+    }
+
     eliminarLineaCubo() {
         if (this.cube != null) {
             this.scene.remove(this.cube);
@@ -253,7 +289,7 @@ export class MusicScene {
         }
     }
 
-    escalarPoligono2D(scale){
+    escalarPoligono2D(scale) {
         if (this.poligono2D != null) {
             this.poligono2D.scale.y *= scale;
             this.poligono2D.scale.x *= scale;
@@ -268,7 +304,7 @@ export class MusicScene {
         }
     }
 
-    escalarPoligono2DMaya(scale){
+    escalarPoligono2DMaya(scale) {
         if (this.poligono2DMaya != null) {
             this.poligono2DMaya.scale.y *= scale;
             this.poligono2DMaya.scale.x *= scale;
@@ -283,7 +319,27 @@ export class MusicScene {
         }
     }
 
+    escalarpoligono2DMayaPoligono(scale) {
+        if (this.poligono2DMayaPoligono != null) {
+            this.poligono2DMayaPoligono.scale.y *= scale;
+            this.poligono2DMayaPoligono.scale.x *= scale;
+            this.poligono2DMayaPoligono.scale.z *= scale;
+        }
+    }
+
+    escalarpoligono2DMayaPoligono() {
+        if (this.poligono2DMayaPoligono != null) {
+            this.scene.remove(this.poligono2DMayaPoligono);
+            this.poligono2DMayaPoligono = null;
+        }
+    }
+
+    rotate(delta, api) {
+        this.scene.rotation.z += api.rotation_speed * delta;
+    }
+
     animate(delta, api) {
+        this.rotate(delta, api);
         if (this.lerpTime <= 1) {
             for (let i = 0; i < api.size; i++) {
                 let newPos = this.particles[i].position.lerp(this.targetPositions[i], this.lerpTime);
@@ -308,6 +364,12 @@ export class MusicScene {
             this.poligono2DMaya.scale.y = THREE.MathUtils.lerp(this.poligono2DMaya.scale.y, api.poligono2DMaya_size, delta);
             this.poligono2DMaya.scale.x = THREE.MathUtils.lerp(this.poligono2DMaya.scale.x, api.poligono2DMaya_size, delta);
             this.poligono2DMaya.scale.z = THREE.MathUtils.lerp(this.poligono2DMaya.scale.z, api.poligono2DMaya_size, delta);
+        }
+
+        if (this.poligono2DMayaPoligono != null) {
+            this.poligono2DMayaPoligono.scale.y = THREE.MathUtils.lerp(this.poligono2DMayaPoligono.scale.y, api.poligono2DMaya_size, delta);
+            this.poligono2DMayaPoligono.scale.x = THREE.MathUtils.lerp(this.poligono2DMayaPoligono.scale.x, api.poligono2DMaya_size, delta);
+            this.poligono2DMayaPoligono.scale.z = THREE.MathUtils.lerp(this.poligono2DMayaPoligono.scale.z, api.poligono2DMaya_size, delta);
         }
     }
 }

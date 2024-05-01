@@ -4,8 +4,11 @@ import { EffectComposer } from 'https://unpkg.com/three@v0.162.0/examples/jsm/po
 import { RenderPass } from 'https://unpkg.com/three@v0.162.0/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'https://unpkg.com/three@v0.162.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'https://unpkg.com/three@v0.162.0/examples/jsm/postprocessing/OutputPass.js';
+import { CSS3DRenderer } from 'https://unpkg.com/three@v0.162.0/examples/jsm/renderers/CSS3DRenderer.js';
+import { CSS3DObject } from 'https://unpkg.com/three@v0.162.0/examples/jsm/renderers/CSS3DRenderer.js';
 import { GuiScene } from './gui.js';
 import { MusicScene } from './music_scene.js';
+
 
 export class App {
 
@@ -13,11 +16,13 @@ export class App {
         this.audioBars = 0;
         this.scene = null;
         this.renderer = null;
+        this.rendererCss = null;
         this.musicScene = null;
         this.composer = null;
         this.musicStart = false;
         this.timeBar = bpm / 120;
         this.clock = new THREE.Clock();
+        this.objectCSS = null;
 
         this.params = {
             threshold: 0,
@@ -44,8 +49,8 @@ export class App {
             circulo: () => this.targetCirculo(),
             linea: () => this.targetPoligono(2),
             triangulo: () => this.targetPoligono(3),
-            poligono: () => this.targetPoligono(null),
-            music:  () => this.playMusic()
+            poligono: () => this.targetPoligono(this.api.poligono_sides),
+            music:  () => this.toogleMusic()
             };
 
         this.init();
@@ -72,6 +77,12 @@ export class App {
         this.container = document.getElementById('container');
         this.container.appendChild(this.renderer.domElement);
 
+        this.rendererCss = new CSS3DRenderer();
+        this.rendererCss.setSize( window.innerWidth, window.innerHeight );
+        this.rendererCss.domElement.style.position = 'absolute';
+        this.rendererCss.domElement.style.top = 0;
+        this.container.appendChild(this.rendererCss.domElement);
+
         // audio
         this.audio = new Audio('https://cdn.pixabay.com/download/audio/2022/01/24/audio_10217b4b7b.mp3?filename=metal-blues-120-bpm-full-15518.mp3');
 
@@ -82,6 +93,7 @@ export class App {
 
         // Controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls = new OrbitControls(this.camera, this.rendererCss.domElement);
         window.addEventListener('keydown', this.onKeyDown)
         window.addEventListener('keyup', this.onKeyUp)
 
@@ -103,13 +115,16 @@ export class App {
         this.stats = gui.stats;
 
         // listeners
-        window.addEventListener('resize', this.onWindowResize);
-        this.musicScene = new MusicScene(this.api, this.scene);
+        window.addEventListener('resize', this.onWindowResize.bind(this));
+        this.actualMusicScene = new THREE.Scene();
+        this.musicScene = new MusicScene(this.api, this.actualMusicScene);
+        this.scene.add(this.actualMusicScene);
+        
         let scene = this.scene;
         Object.assign(window, { scene });
     }
 
-    playMusic() {
+    toogleMusic() {
         if (this.audio.paused)
             this.audio.play();
         else
@@ -142,15 +157,16 @@ export class App {
         this.camera.updateProjectionMatrix();
 
         this.renderer.setSize(width, height);
+        this.rendererCss.setSize(width, height);
     }
 
     on_music_start(){
         this.musicStart = true;
+        this.camera.position.z *= 2;
         this.renderer.toneMappingExposure = Math.pow(2, 4.0);
         this.musicScene.crearLineaPoligono2DMaya(0, 0, 75, this.api);
-        this.musicScene.poligono2DMaya.scale.y = 0.1;
-        this.musicScene.poligono2DMaya.scale.x = 0.1;
-        this.musicScene.poligono2DMaya.scale.z = 0.1;
+        this.musicScene.escalarPoligono2DMaya( 0.1);
+        this.create_text("GARBURATOR´S VISUALIZER")
     }
 
     on_bar(){
@@ -160,9 +176,36 @@ export class App {
     }
 
     lerp_camera_position(delta){
-        this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, this.api.camera_position_y, delta);
-        this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, this.api.camera_position_x, delta);
-        this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, this.api.camera_position_z, 0.25 * delta);
+        if(this.camera.position.distanceTo(new THREE.Vector3(this.api.camera_position_x,this.api.camera_position_y,this.api.camera_position_z)) > 0.05 ){
+            this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, this.api.camera_position_y, delta);
+            this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, this.api.camera_position_x, delta);
+            this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, this.api.camera_position_z, 0.25 * delta);
+        }        
+    }
+
+    create_text(text){
+        if(this.objectCSS == null){
+            const element = document.createElement('div');
+            element.style = "text-align: center; font-family: 'Matrix', sans-serif;";
+            this.objectCSS = new CSS3DObject(element);
+            this.objectCSS.position.set(0,0,-1);
+            this.objectCSS.element.innerHTML = text;
+            this.objectCSS.scale.set(0.5, 0.5, 0.5);
+            this.scene.add(this.objectCSS);
+        }      
+    }
+
+    update_text(text){
+        if(this.objectCSS != null){
+            this.objectCSS.element.innerHTML = text;
+        }              
+    }
+
+    delete_text(){
+        if(this.objectCSS != null){
+            this.scene.remove(this.objectCSS);
+            this.objectCSS = null;
+        }      
     }
 
 
@@ -181,17 +224,18 @@ export class App {
                 case 1:
                 case 2:
                 case 3:
-                    this.api.camera_position_x = (-this.audioBars % 2 == 0) ? -this.audioBars : -this.audioBars * -1
+                    this.api.camera_position_x = (-this.audioBars % 2 == 0) ? -this.audioBars : -this.audioBars * -1;
                     this.api.camera_position_y = -this.audioBars % 2 - 1;
                     break;
                 case 4:
                 case 5:
                 case 6:
                 case 7:
-                    this.api.camera_position_x = (this.audioBars % 2 == 0) ? this.audioBars : this.audioBars * -1
+                    this.api.camera_position_x = (this.audioBars % 2 == 0) ? this.audioBars : this.audioBars * -1;
                     this.api.camera_position_y = this.audioBars % 2 + 1;
                     break;
                 case 8:
+                    this.delete_text();
                     this.api.camera_position_x = 0;
                     this.api.camera_position_y = 0;
                     this.api.camera_position_z += 20;
@@ -199,6 +243,7 @@ export class App {
                     this.musicScene.crearLineaPoligono2D(0, 0, 6, this.api)
                     this.musicScene.targetCirculo(this.api);
                     this.musicScene.eliminarPoigono2DMaya();
+                    this.renderer.toneMappingExposure = Math.pow(5, 4.0);
                     break;
                 case 10:
                     this.api.camera_position_x = -20;
@@ -317,7 +362,6 @@ export class App {
         }
         this.lerp_camera_position(delta);
         this.renderer.toneMappingExposure = THREE.MathUtils.lerp(this.renderer.toneMappingExposure, Math.pow(this.params.exposure, 4.0), 5 * delta);
-        this.scene.rotation.z += this.api.rotation_speed * delta;
 
         this.controls.update();
         this.stats.update();
@@ -326,5 +370,6 @@ export class App {
 
     render() {
         this.composer.render();
+        this.rendererCss.render(scene, this.camera);
     }
 }
