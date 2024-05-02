@@ -8,10 +8,9 @@ export class GuiScene {
         this.gui = new GUI();
         const configFolder = this.gui.addFolder('config');
         configFolder.close();
-        configFolder.add(api, 'size', 20, 200).step(1);
-        configFolder.add(api, 'radius', 2, 64).step(1);
-        configFolder.add(api, 'transition_speed', 0, 20).step(0.1);
-        configFolder.add(api, 'rotation_speed', -2, 2).step(0.1).name("Rotation Speed");
+        configFolder.add(api, 'radius', 2, 64).name("Radio/Size").step(1);
+        configFolder.add(api, 'transition_speed', 0, 20).name("Transition Speed").step(0.1);
+        configFolder.add(api, 'rotation_speed', -2, 2).step(0.1).name("Camera Rotation Speed");
         configFolder.add(api, 'cube_rotation_speed', -2, 2).step(0.1).name("Cube Rotation Speed");
         configFolder.add(api, 'time_step', 0.1, 10).name("Time Step");
         configFolder.add(api, 'camera_position_x', -20, 20).name("Camera X");
@@ -23,7 +22,7 @@ export class GuiScene {
         configFolder.add(api, "cuadrado").name("Cuadrado");
         configFolder.add(api, "circulo").name("Circulo");
         configFolder.add(api, "poligono").name("Poligono");
-        configFolder.add(api, 'poligono_sides', 2, 100).name("Lados del poligono").step(1);
+        configFolder.add(api, 'poligono_sides', 2, 100).name("Poligon sides").step(1);
 
         const bloomFolder = this.gui.addFolder('bloom');
         bloomFolder.close();
