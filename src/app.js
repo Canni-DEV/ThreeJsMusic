@@ -20,9 +20,10 @@ export class App {
         this.musicScene = null;
         this.composer = null;
         this.musicStart = false;
-        this.timeBar = bpm / 120;
+        this.timeBar = (60 / bpm);
         this.clock = new THREE.Clock();
         this.objectCSS = null;
+        this.lastblack = ((60 / bpm) * 4);
 
         this.params = {
             threshold: 0,
@@ -85,7 +86,8 @@ export class App {
         this.container.appendChild(this.rendererCss.domElement);
 
         // audio
-        this.audio = new Audio('https://cdn.pixabay.com/download/audio/2022/01/24/audio_10217b4b7b.mp3?filename=metal-blues-120-bpm-full-15518.mp3');
+        //this.audio = new Audio('https://cdn.pixabay.com/download/audio/2022/01/24/audio_10217b4b7b.mp3?filename=metal-blues-120-bpm-full-15518.mp3');
+        this.audio = new Audio('src/assets/Escapar.mp3');
 
         // Scene
         this.scene = new THREE.Scene();
@@ -115,11 +117,10 @@ export class App {
         const gui = new GuiScene(this.api, this.params, this.container, this.renderer, bloomPass);
         this.stats = gui.stats;
 
-        // listeners
         window.addEventListener('resize', this.onWindowResize.bind(this));
-        this.actualMusicScene = new THREE.Scene();
-        this.musicScene = new MusicScene(this.api, this.actualMusicScene);
-        this.scene.add(this.actualMusicScene);
+        let newMusicScene = new THREE.Scene();
+        this.musicScene = new MusicScene(this.api, newMusicScene);
+        this.scene.add(newMusicScene);
 
         let scene = this.scene;
         Object.assign(window, { scene });
@@ -167,13 +168,55 @@ export class App {
         this.renderer.toneMappingExposure = Math.pow(2, 4.0);
         this.musicScene.crearLineaPoligono2DMaya(0, 0, 75, this.api);
         this.musicScene.escalarPoligono2DMaya(0.1);
-        this.create_text("GARBURATORS VISUALIZER")
+        this.musicScene.targetZero(this.api);
+        this.create_text("ESCAPAR")
+    }
+
+    on_music_end() {
+        this.musicScene.eliminarLineaCubo();
+        this.musicScene.eliminarPoigono2D();
+        this.musicScene.eliminarPoigono2DMaya();
+        this.renderer.toneMappingExposure = Math.pow(5, 4.0);
+        this.api.rotation_speed = 0;
+        this.api.camera_position_x = 0;
+        this.api.camera_position_y = 0;
+        this.api.camera_position_z = 20;
+        this.musicScene.targetZero(this.api);
     }
 
     on_bar() {
         this.renderer.toneMappingExposure = Math.pow(2, 4.0);
         this.musicScene.escalarPoligono2D(1.2);
         this.musicScene.escalarPoligono2DMaya(0.8);
+        if (this.audioBars % 4 == 0) {
+            this.api.camera_position_x = Math.floor(Math.random() * 10) * ((Math.random() > 0.5) ? 1 : -1);
+            this.api.camera_position_y = Math.floor(Math.random() * 10) * ((Math.random() > 0.5) ? 1 : -1);
+            this.api.camera_position_z = Math.floor(75 + Math.random() * 20);
+        }
+        if (this.audioBars % 8 == 0) {
+            if (Math.random() > 0.5) {
+                this.musicScene.eliminarLineaCubo();
+                this.musicScene.eliminarPoigono2D();
+                this.musicScene.crearLineaPoligono2DMaya(0, 0, Math.floor(3 + Math.random() * 6), this.api);
+            } else {
+                this.musicScene.eliminarPoigono2DMaya();
+                this.musicScene.crearLineaPoligono2D(0, 0, Math.floor(3 + Math.random() * 6), this.api);
+                if (Math.random() > 0.6) {
+                    this.musicScene.crearLineaCubo(0, 0, this.api);
+                }
+            }
+            this.api.rotation_speed = Math.random() * 0.2 * ((Math.random() > 0.5) ? 1 : -1);
+        }
+        if (this.audioBars % 16 == 0) {
+            this.delete_text();
+            if(Math.random() > 0.9){
+                this.musicScene.targetCirculo(this.api);
+            }else{
+                this.musicScene.targetPoligono(Math.floor(2 + Math.random() * 6), this.api);
+            }
+            this.renderer.toneMappingExposure = Math.pow(4, 4.0);
+        }
+
     }
 
     lerp_camera_position(delta) {
@@ -185,6 +228,7 @@ export class App {
     }
 
     create_text(text) {
+        this.delete_text();
         if (this.objectCSS == null) {
             const element = document.createElement('div');
             element.style = "text-align: center; font-family: 'Matrix', sans-serif; font-size:75px; line-height:100px;";
@@ -218,150 +262,15 @@ export class App {
         }
         requestAnimationFrame(this.animate.bind(this));
         this.musicScene.animate(delta, this.api);
-        if (this.audio.currentTime > this.audioBars + this.timeBar && this.audio.currentTime < this.audio.duration - (this.timeBar * 2)) {
+        if (this.audio.currentTime > this.lastblack + this.timeBar && this.audio.currentTime < this.audio.duration - (this.timeBar * 2)) {
             this.audioBars++;
+            this.lastblack += this.timeBar;
             this.on_bar();
-            switch (this.audioBars) {
-                case 1:
-                case 2:
-                case 3:
-                    this.api.camera_position_x = (-this.audioBars % 2 == 0) ? -this.audioBars : -this.audioBars * -1;
-                    this.api.camera_position_y = -this.audioBars % 2 - 1;
-                    break;
-                case 4:
-                case 5:
-                case 6:
-                case 7:
-                    this.api.camera_position_x = (this.audioBars % 2 == 0) ? this.audioBars : this.audioBars * -1;
-                    this.api.camera_position_y = this.audioBars % 2 + 1;
-                    break;
-                case 8:
-                    this.delete_text();
-                    this.api.camera_position_x = 0;
-                    this.api.camera_position_y = 0;
-                    this.api.camera_position_z += 20;
-                    this.musicScene.crearLineaCubo(0, 0, this.api);
-                    this.musicScene.crearLineaPoligono2D(0, 0, 6, this.api)
-                    this.musicScene.targetCirculo(this.api);
-                    this.musicScene.eliminarPoigono2DMaya();
-                    this.renderer.toneMappingExposure = Math.pow(5, 4.0);
-                    break;
-                case 10:
-                    this.api.camera_position_x = -20;
-                    break;
-                case 12:
-                    this.api.camera_position_x = 20;
-                    break;
-                case 14:
-                    this.api.camera_position_x = 0;
-                    break;
-                case 16:
-                    this.api.radius = 45;
-                    this.api.camera_position_z -= 40;
-                    this.musicScene.targetPoligono(3, this.api);
-                    this.api.rotation_speed = 0.2;
-                    this.api.camera_position_y = 2;
-                    break;
-                case 18:
-                    this.api.camera_position_y = -20;
-                    break;
-                case 20:
-                    this.api.camera_position_y = 20;
-                    break;
-                case 22:
-                    this.api.camera_position_y = 0;
-                    break;
-                case 24:
-                    this.api.camera_position_z = 75;
-                    this.musicScene.eliminarLineaCubo();
-                    this.musicScene.eliminarPoigono2D();
-                    this.musicScene.crearLineaPoligono2DMaya(0, 0, 6, this.api);
-                    this.musicScene.targetPoligono(2, this.api);
-                    this.api.rotation_speed = -0.2;
-                    this.api.camera_position_y = -2;
-                    break;
-                case 32:
-                    this.api.rotation_speed = -0.2;
-                    this.api.camera_position_y = 2;
-                    break;
-                case 40:
-                    this.api.radius = 30;
-                    this.musicScene.crearLineaCubo(0, 0, this.api);
-                    this.musicScene.crearLineaPoligono2D(0, 0, 6, this.api)
-                    this.musicScene.eliminarPoigono2DMaya();
-                    this.musicScene.targetCirculo(this.api);
-                    this.api.rotation_speed = 0.1;
-                    this.api.camera_position_y = 5;
-                    this.api.camera_position_x += 15;
-                    break;
-                case 48:
-                    this.musicScene.targetPoligono(3, this.api);
-                    this.api.rotation_speed = 0.2;
-                    this.api.camera_position_y = -10;
-                    this.api.camera_position_x = 0;
-                    break;
-                case 56:
-                case 58:
-                case 60:
-                case 62:
-                case 64:
-                case 66:
-                case 68:
-                    this.musicScene.eliminarLineaCubo();
-                    this.musicScene.eliminarPoigono2D();
-                    this.api.poligono2D_size = 0.5;
-                    this.musicScene.crearLineaPoligono2D(0, 0, this.audioBars - 52, this.api);
-                    this.api.radius = this.audioBars - 52;
-                    this.api.rotation_speed = 0.1;
-                    this.api.camera_position_y = 0;
-                    this.musicScene.targetPoligono(this.audioBars - 52, this.api);
-                    this.renderer.toneMappingExposure = Math.pow(3, 4.0);
-                    break;
-                case 72:
-                    this.musicScene.eliminarPoigono2D();
-                    this.api.radius = 40;
-                    this.api.rotation_speed = 0.2;
-                    this.api.camera_position_y = 2;
-                    this.musicScene.targetPoligono(2, this.api);
-                    this.musicScene.crearLineaPoligono2DMaya(0, 0, 6, this.api);
-                    break;
-                case 76:
-                    this.musicScene.eliminarPoigono2DMaya();
-                    this.musicScene.crearLineaPoligono2DMaya(0, 0, 3, this.api);
-                    this.musicScene.targetPoligono(3, this.api);
-                    this.api.rotation_speed = 0.2 + (this.audioBars - 70) * delta;
-                    break;
-                case 80:
-                    this.musicScene.eliminarPoigono2DMaya();
-                    this.musicScene.crearLineaPoligono2DMaya(0, 0, 4, this.api);
-                    this.musicScene.targetPoligono(4, this.api);
-                    this.api.rotation_speed = 0.2 + (this.audioBars - 70) * delta;
-                    break;
-                case 82:
-                    this.musicScene.eliminarPoigono2DMaya();
-                    this.musicScene.crearLineaPoligono2DMaya(0, 0, 5, this.api);
-                    this.musicScene.targetPoligono(5, this.api);
-                    this.api.rotation_speed = 0.2 + (this.audioBars - 70) * delta;
-                    break;
-                case 84:
-                    this.musicScene.eliminarPoigono2DMaya();
-                    this.musicScene.crearLineaPoligono2DMaya(0, 0, 6, this.api);
-                    this.musicScene.targetPoligono(6, this.api);
-                    this.api.camera_position_z = 80;
-                    this.api.camera_position_y = 0;
-                    this.api.rotation_speed = 0.2 + (this.audioBars - 60) * delta;
-                    break;
-                case 88:
-                    this.musicScene.eliminarPoigono2DMaya();
-                    this.api.camera_position_z = 20;
-                    this.renderer.toneMappingExposure = Math.pow(5, 4.0);
-                    this.api.rotation_speed = 0;
-                    this.api.camera_position_x = 0;
-                    this.api.camera_position_y = 0;
-                    this.musicScene.targetZero(this.api);
-                    break;
-            }
         }
+        if (this.audio.currentTime > this.audio.duration - (this.timeBar)){
+            this.on_music_end();
+        }
+
         this.lerp_camera_position(delta);
         this.renderer.toneMappingExposure = THREE.MathUtils.lerp(this.renderer.toneMappingExposure, Math.pow(this.params.exposure, 4.0), 5 * delta);
 

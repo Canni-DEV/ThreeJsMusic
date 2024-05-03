@@ -115,6 +115,8 @@ export class MusicScene {
     }
 
     crearLineaCubo(x, y, api) {
+        if(this.cube != null)
+            return;
         const material = new THREE.LineBasicMaterial({
             color: 0x1DA150
         });
@@ -188,6 +190,7 @@ export class MusicScene {
     }
 
     crearLineaPoligono2D(x, y, number_sides, api) {
+        this.eliminarPoigono2D();
         const material = new THREE.LineBasicMaterial({
             color: 0x1DA150
         });
@@ -215,6 +218,7 @@ export class MusicScene {
     }
 
     crearLineaPoligono2DMaya(x, y, number_sides, api) {
+        this.eliminarPoigono2DMaya();
         const material = new THREE.LineBasicMaterial({
             color: 0x1DA150
         });
