@@ -201,7 +201,7 @@ export class App {
             } else {
                 this.musicScene.eliminarPoigono2DMaya();
                 this.musicScene.crearLineaPoligono2D(0, 0, Math.floor(3 + Math.random() * 6), this.api);
-                if (Math.random() > 0.6) {
+                if (Math.random() > 0.5) {
                     this.musicScene.crearLineaCubo(0, 0, this.api);
                 }
             }
@@ -209,14 +209,19 @@ export class App {
         }
         if (this.audioBars % 16 == 0) {
             this.delete_text();
-            if(Math.random() > 0.9){
+            var sides = Math.floor(2 + Math.random() * 8);
+            if (sides === 7) {
                 this.musicScene.targetCirculo(this.api);
             }else{
-                this.musicScene.targetPoligono(Math.floor(2 + Math.random() * 6), this.api);
+                this.musicScene.targetPoligono(sides, this.api);
+            }
+            if (sides == 2) {
+                this.musicScene.eliminarLineaCubo();
+                this.musicScene.eliminarPoigono2D();
+                this.musicScene.crearLineaPoligono2DMaya(0, 0, Math.floor(3 + Math.random() * 4), this.api);
             }
             this.renderer.toneMappingExposure = Math.pow(4, 4.0);
         }
-
     }
 
     lerp_camera_position(delta) {
@@ -267,7 +272,7 @@ export class App {
             this.lastblack += this.timeBar;
             this.on_bar();
         }
-        if (this.audio.currentTime > this.audio.duration - (this.timeBar)){
+        if (this.audio.currentTime > this.audio.duration - (this.timeBar)) {
             this.on_music_end();
         }
 
