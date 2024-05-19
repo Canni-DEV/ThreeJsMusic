@@ -115,7 +115,7 @@ export class MusicScene {
     }
 
     crearLineaCubo(x, y, api) {
-        if(this.cube != null)
+        if (this.cube != null)
             return;
         const material = new THREE.LineBasicMaterial({
             color: 0x1DA150
@@ -342,13 +342,17 @@ export class MusicScene {
         this.scene.rotation.z += api.rotation_speed * delta;
     }
 
-    animate(delta, api) {
+    animate(delta, api, audioMotion) {
         this.rotate(delta, api);
         if (this.lerpTime <= 1) {
             for (let i = 0; i < api.size; i++) {
+                let freqVar = audioMotion.getEnergy(6000 / api.size * (i + 1), 6000 / api.size * (i + 2)) * 2;
+                var angulo = (i / api.size) * Math.PI * 2;
+                var x = freqVar * Math.cos(angulo);
+                var y = freqVar * Math.sin(angulo);
                 let newPos = this.particles[i].position.lerp(this.targetPositions[i], this.lerpTime);
-                this.particles[i].position.x = newPos.x;
-                this.particles[i].position.y = newPos.y;
+                this.particles[i].position.x = newPos.x + x;
+                this.particles[i].position.y = newPos.y + y;
                 this.particles[i].position.z = newPos.z;
             }
             this.lerpTime += api.transition_speed * delta;

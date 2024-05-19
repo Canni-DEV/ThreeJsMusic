@@ -8,6 +8,7 @@ import { CSS3DRenderer } from 'https://unpkg.com/three@v0.162.0/examples/jsm/ren
 import { CSS3DObject } from 'https://unpkg.com/three@v0.162.0/examples/jsm/renderers/CSS3DRenderer.js';
 import { GuiScene } from './gui.js';
 import { MusicScene } from './music_scene.js';
+import { SpectrumAnalyzer } from './spectrum_analyzer.js';
 
 
 export class App {
@@ -88,6 +89,7 @@ export class App {
         // audio
         //this.audio = new Audio('https://cdn.pixabay.com/download/audio/2022/01/24/audio_10217b4b7b.mp3?filename=metal-blues-120-bpm-full-15518.mp3');
         this.audio = new Audio('src/assets/Escapar.mp3');
+        this.spectrumAnalyzer = new SpectrumAnalyzer(this.api,this.audio);
 
         // Scene
         this.scene = new THREE.Scene();
@@ -266,7 +268,7 @@ export class App {
             this.on_music_start();
         }
         requestAnimationFrame(this.animate.bind(this));
-        this.musicScene.animate(delta, this.api);
+        this.musicScene.animate(delta, this.api,this.spectrumAnalyzer.audioMotion);
         if (this.audio.currentTime > this.lastblack + this.timeBar && this.audio.currentTime < this.audio.duration - (this.timeBar * 2)) {
             this.audioBars++;
             this.lastblack += this.timeBar;
